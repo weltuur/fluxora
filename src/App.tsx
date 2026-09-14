@@ -23,7 +23,7 @@ import { X1Assistant } from '@/pages/app/X1Assistant';
 import { Analytics } from '@/pages/app/Analytics';
 
 import { BarChart3, Calendar, Sparkles } from 'lucide-react';
-
+import CalendarPage from '@/pages/app/calendar';
 export default function App() {
   return (
     <AuthProvider>
@@ -129,11 +129,10 @@ export default function App() {
             path="/app/calendario"
             element={
               <ProtectedRoute requireOnboarding>
-                <PlaceholderPage
-                  title="Calendário"
-                  description="Planeje seus conteúdos e acompanhe seu cronograma"
-                  icon={<Calendar size={24} />}
-                />
+              
+                 <CalendarPage />
+            
+                
               </ProtectedRoute>
             }
           />
