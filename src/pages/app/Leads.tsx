@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 import { formatCurrency, formatDate, cn } from '@/lib/utils';
 import type { Lead, LeadStatus } from '@/types/database';
 
@@ -28,6 +29,7 @@ const platforms = ['TikTok', 'WhatsApp', 'Instagram', 'Facebook', 'Outros'];
 const statuses = Object.keys(statusLabels) as LeadStatus[];
 
 export function Leads() {
+  const { user } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -51,12 +53,20 @@ export function Leads() {
     loadLeads();
   }, []);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!name.trim()) return;
-    setSubmitting(true);
+ async function handleSubmit(e: FormEvent) {
+  e.preventDefault();
+  if (!name.trim()) return;
 
-    await supabase.from('leads').insert({
+  if (!user) {
+    window.alert('Sua sessão expirou. Faça login novamente.');
+    return;
+  }
+
+  setSubmitting(true);
+
+  try {
+    const { error } = await supabase.from('leads').insert({
+      user_id: user.id,
       name: name.trim(),
       username: username.trim() || null,
       platform,
@@ -64,14 +74,29 @@ export function Leads() {
       potential_value: parseFloat(potentialValue) || 0,
     });
 
-    setSubmitting(false);
-    setShowForm(false);
+    if (error) {
+      console.error('Erro ao salvar lead:', error);
+      window.alert(`Não foi possível salvar o lead: ${error.message}`);
+      return;
+    }
+
+    // Limpa o formulário após salvar com sucesso
     setName('');
     setUsername('');
+    setPlatform('TikTok');
     setNotes('');
     setPotentialValue('');
-    loadLeads();
+
+    // Recarrega a lista de leads
+    await loadLeads();
+  } catch (error) {
+    console.error('Erro ao salvar lead:', error);
+    window.alert('Não foi possível salvar o lead.');
+  } finally {
+    setSubmitting(false);
   }
+} 
+
 
   async function updateStatus(id: string, status: LeadStatus) {
     await supabase.from('leads').update({ status }).eq('id', id);

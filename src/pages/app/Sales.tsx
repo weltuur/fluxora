@@ -5,10 +5,12 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Sale, Product, Lead } from '@/types/database';
 
 export function Sales() {
+  const { user } = useAuth();
   const [sales, setSales] = useState<Sale[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -39,21 +41,35 @@ export function Sales() {
   }, []);
 
   async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setSubmitting(true);
+  e.preventDefault();
 
-    await supabase.from('sales').insert({
-      amount: parseFloat(amount) || 0,
-      source,
-      product_id: productId || null,
-      lead_id: leadId || null,
-    });
-
-    setSubmitting(false);
-    setShowForm(false);
-    setAmount('');
-    loadData();
+  if (!user) {
+    window.alert('Sua sessão expirou. Faça login novamente.');
+    return;
   }
+
+  setSubmitting(true);
+
+  const { error } = await supabase.from('sales').insert({
+    user_id: user.id,
+    amount: parseFloat(amount) || 0,
+    source,
+    product_id: productId || null,
+    lead_id: leadId || null,
+  });
+
+  if (error) {
+    console.error('Erro ao registrar venda:', error);
+    window.alert(`Não foi possível registrar a venda: ${error.message}`);
+    setSubmitting(false);
+    return;
+  }
+
+  setSubmitting(false);
+  setShowForm(false);
+  setAmount('');
+  loadData();
+}
 
   const totalRevenue = sales.reduce((sum, s) => sum + Number(s.amount), 0);
 
