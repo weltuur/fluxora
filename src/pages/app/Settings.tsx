@@ -21,6 +21,9 @@ export function SettingsPage() {
   const [name, setName] = useState(profile?.full_name?? '');
   const [businessType, setBusinessType] = useState<BusinessType | ''>(profile?.business_type ?? '');
   const [goal, setGoal] = useState<Goal | ''>(profile?.goal ?? '');
+  const [weeklySalesGoal, setWeeklySalesGoal] = useState(
+  profile?.weekly_sales_goal?.toString() ?? ''
+);
   const [selectedChannels, setSelectedChannels] = useState<SellingChannel[]>(profile?.selling_channels ?? []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -37,11 +40,12 @@ export function SettingsPage() {
   setSaved(false);
 
   const { error } = await updateProfile({
-    full_name: name,
-    business_type: businessType || null,
-    goal: goal || null,
-    selling_channels: selectedChannels,
-  });
+  full_name: name,
+  business_type: businessType || null,
+  goal: goal || null,
+  selling_channels: selectedChannels,
+  weekly_sales_goal: weeklySalesGoal ? Number(weeklySalesGoal) : null,
+});
 
   setSaving(false);
 
@@ -140,6 +144,23 @@ export function SettingsPage() {
                 ))}
               </select>
             </div>
+            <div>
+  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+    Meta de vendas por semana
+  </label>
+
+  <Input
+    type="number"
+    min="1"
+    value={weeklySalesGoal}
+    onChange={(e) => setWeeklySalesGoal(e.target.value)}
+    placeholder="Ex.: 10"
+  />
+
+  <p className="mt-1.5 text-xs text-slate-500">
+    Defina quantas vendas você deseja alcançar por semana.
+  </p>
+</div>
           </div>
         </Card>
 
