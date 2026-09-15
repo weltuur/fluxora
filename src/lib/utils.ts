@@ -1,12 +1,10 @@
 export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('pt-MZ', {
-    style: 'currency',
-    currency: 'MZN',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
+  return `${new Intl.NumberFormat('pt-MZ', {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+}).format(value)} MZN`;
 
+}
 export function formatDate(date: string | Date): string {
   return new Intl.DateTimeFormat('pt-MZ', {
     day: '2-digit',
