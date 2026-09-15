@@ -22,7 +22,20 @@ export function SubscriptionPage() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const expirationDate = subscription?.expires_at
+    ? new Date(subscription.expires_at)
+    : null;
+
+  const daysRemaining = expirationDate
+    ? Math.max(
+        0,
+        Math.ceil(
+          (expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        )
+      )
+    : 0;
+
+  useEffect(() => {  
     async function load() {
       const [plansRes, subRes] = await Promise.all([
         supabase.from('plans').select('*').eq('active', true).neq('slug', 'admin').order('sort_order'),
@@ -74,13 +87,30 @@ export function SubscriptionPage() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Plano {subscription.plan?.name}</h2>
-              <p className="text-sm text-slate-600">
-                {subscription.plan?.content_limit === null &&
-                subscription.plan?.hook_limit === null &&
-                subscription.plan?.x1_limit === null
-                  ? 'Acesso completo e ilimitado'
-                  : 'Sua assinatura está ativa'}
-              </p>
+             <p className="text-sm text-slate-600">
+  {subscription.plan?.content_limit === null &&
+  subscription.plan?.hook_limit === null &&
+  subscription.plan?.x1_limit === null
+    ? 'Acesso completo e ilimitado'
+    : 'Sua assinatura está ativa'}
+</p>
+
+{expirationDate && (
+  <div className="mt-3 space-y-1 text-sm">
+    <p className="text-slate-600">
+      Sua assinatura expira em:{' '}
+      <span className="font-semibold text-slate-900">
+        {expirationDate.toLocaleDateString('pt-MZ')}
+      </span>
+    </p>
+
+    <p className="font-medium text-teal-700">
+      {daysRemaining === 0
+        ? 'Sua assinatura expira hoje'
+        : `${daysRemaining} ${daysRemaining === 1 ? 'dia' : 'dias'} restantes`}
+    </p>
+  </div>
+)}
             </div>
           </div>
         </Card>
