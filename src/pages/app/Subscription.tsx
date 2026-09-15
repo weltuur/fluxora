@@ -12,9 +12,9 @@ const badges: Record<string, string> = {
 };
 
 const billingPeriodLabels: Record<Plan['billing_period'], string> = {
-  monthly: 'Mensal',
-  quarterly: 'Trimestral',
-  yearly: 'Anual',
+  biweekly: '15 dias',
+  monthly: '30 dias',
+  bimonthly: '60 dias',
 };
 
 export function SubscriptionPage() {
@@ -26,11 +26,12 @@ export function SubscriptionPage() {
     async function load() {
       const [plansRes, subRes] = await Promise.all([
         supabase.from('plans').select('*').eq('active', true).neq('slug', 'admin').order('sort_order'),
-        supabase
-          .from('subscriptions')
-          .select('*, plan:plans(*)')
-          .eq('status', 'active')
-          .maybeSingle(),
+       supabase
+  .from('subscriptions')
+  .select('*, plan:plans(*)')
+  .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+  .eq('status', 'active')
+  .maybeSingle(), 
       ]);
       setPlans((plansRes.data as Plan[]) ?? []);
       setSubscription((subRes.data as Subscription) ?? null);

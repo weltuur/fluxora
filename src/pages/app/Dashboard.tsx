@@ -14,6 +14,9 @@ export function Dashboard() {
   const { profile, user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({ leadsCount: 0, salesCount: 0, revenue: 0, conversionRate: 0 });
+  const [chartData, setchartData] = useState<
+  { day: string; leads: number; sales: number }[]
+>([]);
   const [loading, setLoading] = useState(true);
   const [weeklySalesGoal, setWeeklySalesGoal] = useState<number | null>(null);
 
@@ -26,13 +29,44 @@ export function Dashboard() {
   .maybeSingle();
 
 setWeeklySalesGoal(profileData?.weekly_sales_goal ?? null);
-      const { data: leads } = await supabase.from('leads').select('id');
-      const { data: sales } = await supabase.from('sales').select('amount');
+  const { data: leads } = await supabase.from('leads').select('id, created_at');
+  const { data: sales } = await supabase.from('sales').select('amount, sold_at, created_at');
 
-      const leadsCount = leads?.length ?? 0;
-      const salesCount = sales?.length ?? 0;
+    const leadsCount = leads?.length ?? 0;
+    const salesCount = sales?.length ?? 0;
+
+const chartDataRows = Array.from({ length: 7 }, (_, index) => {
+  const date = new Date();
+  date.setDate(date.getDate() - (6 - index));
+
+  const dayStart = new Date(date);
+  dayStart.setHours(0, 0, 0, 0);
+
+  const dayEnd = new Date(date);
+  dayEnd.setHours(23, 59, 59, 999);
+
+  const dayLeads = leads?.filter((lead) => {
+    const createdAt = new Date(lead.created_at);
+    return createdAt >= dayStart && createdAt <= dayEnd;
+  }).length ?? 0;
+
+  const daySales = sales?.filter((sale) => {
+    const saleDate = sale.sold_at || sale.created_at;
+    if (!saleDate) return false;
+
+    const createdAt = new Date(saleDate);
+    return createdAt >= dayStart && createdAt <= dayEnd;
+  }).length ?? 0;
+  
+  return {
+    day: date.toLocaleDateString('pt-MZ', { weekday: 'short' }).replace('.', ''),
+    leads: dayLeads,
+    sales: daySales,
+  };
+});
+setchartData(chartDataRows);
       const revenue = sales?.reduce((sum, s) => sum + Number(s.amount), 0) ?? 0;
-      const conversionRate = leadsCount > 0 ? (salesCount / leadsCount) * 100 : 0;
+    const conversionRate = leadsCount > 0 ? Math.min((salesCount / leadsCount) * 100, 100) : 0;  
 
       setStats({ leadsCount, salesCount, revenue, conversionRate });
       setLoading(false);
@@ -124,7 +158,7 @@ setWeeklySalesGoal(profileData?.weekly_sales_goal ?? null);
       {/* Performance + Weekly Goal */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
         <div className="lg:col-span-2 rounded-xl border border-slate-200/80 bg-slate-50/60 p-1">
-          <PerformanceChart />
+          <PerformanceChart data={chartData} />
         </div>
 
         <Card className="p-5 sm:p-6">

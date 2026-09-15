@@ -11,17 +11,19 @@ export function Pricing() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    supabase
-      .from('plans')
-      .select('*')
-      .eq('active', true)
-      .order('sort_order')
-      .then(({ data }) => {
-        if (data) setPlans(data as Plan[]);
-        setLoading(false);
-      });
-  }, []);
+useEffect(() => {
+  supabase
+    .from('plans')
+    .select('*')
+    .eq('active', true)
+    .order('sort_order')
+    .then(({ data }) => {
+      if (data) {
+        setPlans(data as Plan[]);
+      }
+      setLoading(false);
+    });
+}, []);
 
   const badges: Record<string, string> = {
     avancado: 'MAIS POPULAR',
@@ -29,10 +31,10 @@ export function Pricing() {
   };
 
   const billingPeriodLabels: Record<Plan['billing_period'], string> = {
-    monthly: 'Mensal',
-    quarterly: 'Trimestral',
-    yearly: 'Anual',
-  };
+  biweekly: '15 dias',
+  monthly: '30 dias',
+  bimonthly: '60 dias',
+};
 
   return (
     <PublicLayout>

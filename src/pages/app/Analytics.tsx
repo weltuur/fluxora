@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BarChart3, FileText, Loader2, MessageCircle, ShoppingCart, TrendingUp, Users, Wallet, Zap } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { useAuth } from '@/context/AuthContext';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Card } from '@/components/ui/Card';
 import { supabase } from '@/lib/supabase';
@@ -34,6 +35,7 @@ function formatChartDate(value: string): string {
 }
 
 export function Analytics() {
+ const { user } = useAuth();
   const [period, setPeriod] = useState<PeriodDays>(7);
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,11 +53,37 @@ export function Analytics() {
       startDate.setDate(startDate.getDate() - (period - 1));
       const startIso = startDate.toISOString();
 
-      const [contentResult, hooksResult, x1Result] = await Promise.all([
-        supabase.from('generated_content').select('created_at').gte('created_at', startIso),
-        supabase.from('generated_hooks').select('created_at').gte('created_at', startIso),
-        supabase.from('x1_conversations').select('created_at').gte('created_at', startIso),
-      ]);
+     const [leadsResult, salesResult, contentResult, hooksResult, x1Result] = await Promise.all([
+  supabase
+    .from('leads')
+    .select('id, created_at')
+    .eq('user_id', user?.id)
+    .gte('created_at', startIso),
+
+  supabase
+    .from('sales')
+    .select('amount, sold_at, created_at')
+    .eq('user_id', user?.id)
+    .gte('sold_at', startIso),
+
+  supabase
+    .from('generated_content')
+    .select('created_at')
+    .eq('user_id', user?.id)
+    .gte('created_at', startIso),
+
+  supabase
+    .from('generated_hooks')
+    .select('created_at')
+    .eq('user_id', user?.id)
+    .gte('created_at', startIso),
+
+  supabase
+    .from('x1_conversations')
+    .select('created_at')
+    .eq('user_id', user?.id)
+    .gte('created_at', startIso),
+]); 
 
       if (contentResult.error) console.error('[Analytics] content error', {
         code: contentResult.error.code,
@@ -86,10 +114,11 @@ export function Analytics() {
         return;
       }
 
-      if (mounted) {
+ 
+   if (mounted) {
         setData({
-          leads: [],
-          sales: [],
+          leads: (leadsResult.data as DatedRow[]) ?? [],
+          sales: (salesResult.data as SaleRow[]) ?? [],
           content: (contentResult.data as DatedRow[]) ?? [],
           hooks: (hooksResult.data as DatedRow[]) ?? [],
           x1: (x1Result.data as DatedRow[]) ?? [],
@@ -104,6 +133,7 @@ export function Analytics() {
     };
   }, [period]);
 
+   
   const metrics = useMemo(() => {
     const leads = data?.leads.length ?? 0;
     const sales = data?.sales.length ?? 0;
@@ -112,7 +142,7 @@ export function Analytics() {
       leads,
       sales,
       revenue,
-      conversionRate: leads > 0 ? (sales / leads) * 100 : 0,
+      conversionRate: leads > 0 ? Math.min((sales / leads) * 100, 100) : 0,
       content: data?.content.length ?? 0,
       hooks: data?.hooks.length ?? 0,
       x1: data?.x1.length ?? 0,

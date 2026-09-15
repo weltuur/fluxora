@@ -35,7 +35,7 @@ export interface Plan {
   name: string;
   slug: 'basico' | 'avancado' | 'premium';
   price: number;
-  billing_period: 'monthly' | 'quarterly' | 'yearly';
+  billing_period: 'biweekly' | 'monthly' | 'bimonthly';
   content_limit: number | null;
   hook_limit: number | null;
   x1_limit: number | null;
