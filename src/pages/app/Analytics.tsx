@@ -27,7 +27,13 @@ type AnalyticsData = {
 };
 
 function toDateKey(value: string): string {
-  return new Date(value).toISOString().slice(0, 10);
+  const date = new Date(value);
+
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
 }
 
 function formatChartDate(value: string): string {
@@ -155,20 +161,32 @@ export function Analytics() {
     const days = Array.from({ length: period }, (_, index) => {
       const date = new Date(today);
       date.setDate(today.getDate() - (period - 1 - index));
-      return date.toISOString().slice(0, 10);
+    return [
+  date.getFullYear(),
+  String(date.getMonth() + 1).padStart(2, '0'),
+  String(date.getDate()).padStart(2, '0'),
+].join('-');
     });
 
     const salesByDate = new Map<string, { count: number; revenue: number }>();
-    data?.sales.forEach((sale) => {
-      const key = toDateKey(sale.sold_at);
-      const current = salesByDate.get(key) ?? { count: 0, revenue: 0 };
-      salesByDate.set(key, { count: current.count + 1, revenue: current.revenue + Number(sale.amount) });
-    });
+   data?.sales.forEach((sale) => {
+  const saleDate = sale.sold_at || sale.created_at;
+  if (!saleDate) return;
+
+  const key = toDateKey(saleDate);
+  const current = salesByDate.get(key) ?? { count: 0, revenue: 0 };
+
+  salesByDate.set(key, {
+    count: current.count + 1,
+    revenue: current.revenue + Number(sale.amount),
+  });
+}); 
 
     return days.map((date) => ({ date, ...(salesByDate.get(date) ?? { count: 0, revenue: 0 }) }));
   }, [data, period]);
 
   const maxRevenue = Math.max(...chartData.map((item) => item.revenue), 1);
+  const maxSales = Math.max(...chartData.map((item) => item.count), 1);
   const hasData = metrics.leads + metrics.sales + metrics.content + metrics.hooks + metrics.x1 > 0;
 
   return (
@@ -225,23 +243,82 @@ export function Analytics() {
               <p className="text-sm text-slate-500">Crie leads, registre vendas ou use as ferramentas do Fluxora para acompanhar seu desempenho.</p>
             </Card>
           ) : (
-            <Card className="p-5 sm:p-6">
-              <div className="flex items-start justify-between gap-4 mb-6">
-                <div><h2 className="text-base font-semibold text-slate-900">Vendas e receita</h2><p className="text-sm text-slate-500 mt-0.5">Evolução diária no período selecionado</p></div>
-                <div className="text-right"><p className="text-xs text-slate-400">Receita</p><p className="text-sm font-semibold text-teal-600">{formatCurrency(metrics.revenue)}</p></div>
-              </div>
-              <div className="flex items-end gap-1.5 sm:gap-2 h-56 overflow-x-auto pb-6">
-                {chartData.map((item) => (
-                  <div key={item.date} className="group relative flex h-full min-w-[20px] flex-1 flex-col items-center justify-end gap-2">
-                    <div className="relative flex h-full w-full items-end justify-center">
-                      <div className="w-full max-w-8 rounded-t-md bg-teal-400 transition-all group-hover:bg-teal-500" style={{ height: `${item.revenue > 0 ? Math.max((item.revenue / maxRevenue) * 100, 6) : 2}%` }} title={`${formatChartDate(item.date)}: ${formatCurrency(item.revenue)}`} />
-                    </div>
-                    <span className="absolute -bottom-5 text-[10px] text-slate-400">{formatChartDate(item.date)}</span>
-                    <div className="pointer-events-none absolute bottom-full z-10 mb-2 hidden whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs text-white group-hover:block">{item.count} venda{item.count === 1 ? '' : 's'} · {formatCurrency(item.revenue)}</div>
-                  </div>
-                ))}
-              </div>
-            </Card>
+<Card className="p-5 sm:p-6">
+  <div className="flex items-start justify-between gap-4 mb-6">
+    <div>
+      <h2 className="text-base font-semibold text-slate-900">
+        Vendas e receita
+      </h2>
+      <p className="text-sm text-slate-500 mt-0.5">
+        Evolução diária no período selecionado
+      </p>
+    </div>
+
+    <div className="text-right">
+      <p className="text-xs text-slate-400">Receita</p>
+      <p className="text-sm font-semibold text-teal-600">
+        {formatCurrency(metrics.revenue)}
+      </p>
+    </div>
+  </div>
+
+  <div className="relative h-56 overflow-x-auto">
+    <div className="flex h-48 min-w-max items-end gap-4 px-2">
+      {chartData.map((item) => {
+        const revenueHeight =
+          item.revenue > 0
+            ? Math.max((item.revenue / maxRevenue) * 170, 10)
+            : 4;
+
+        const salesHeight =
+          item.count > 0
+            ? Math.max((item.count / maxSales) * 170, 10)
+            : 4;
+
+        return (
+          <div
+            key={item.date}
+            className="flex h-full w-12 flex-col items-center justify-end"
+          >
+            <div className="flex h-full w-full items-end justify-center gap-1">
+              <div
+                className="w-5 rounded-t-md bg-teal-400 transition-all hover:bg-teal-500"
+                style={{ height: `${revenueHeight}px` }}
+                title={`${formatChartDate(item.date)}: ${formatCurrency(
+                  item.revenue
+                )}`}
+              />
+
+              <div
+                className="w-5 rounded-t-md bg-blue-400 transition-all hover:bg-blue-500"
+                style={{ height: `${salesHeight}px` }}
+                title={`${formatChartDate(item.date)}: ${item.count} ${
+                  item.count === 1 ? 'venda' : 'vendas'
+                }`}
+              />
+            </div>
+
+            <span className="mt-2 whitespace-nowrap text-[10px] text-slate-400">
+              {formatChartDate(item.date)}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+
+  <div className="mt-4 flex items-center justify-center gap-5">
+    <div className="flex items-center gap-1.5">
+      <span className="h-2.5 w-2.5 rounded-full bg-teal-400" />
+      <span className="text-xs text-slate-500">Receita</span>
+    </div>
+
+    <div className="flex items-center gap-1.5">
+      <span className="h-2.5 w-2.5 rounded-full bg-blue-400" />
+      <span className="text-xs text-slate-500">Vendas</span>
+    </div>
+  </div>
+</Card>       
           )}
         </>
       )}
