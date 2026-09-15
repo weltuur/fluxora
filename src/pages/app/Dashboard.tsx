@@ -11,13 +11,21 @@ import { formatCurrency } from '@/lib/utils';
 import type { DashboardStats } from '@/types/database';
 
 export function Dashboard() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({ leadsCount: 0, salesCount: 0, revenue: 0, conversionRate: 0 });
   const [loading, setLoading] = useState(true);
+  const [weeklySalesGoal, setWeeklySalesGoal] = useState<number | null>(null);
 
   useEffect(() => {
     async function loadStats() {
+      const { data: profileData } = await supabase
+  .from('profiles')
+  .select('weekly_sales_goal')
+  .eq('id', profile?.id)
+  .maybeSingle();
+
+setWeeklySalesGoal(profileData?.weekly_sales_goal ?? null);
       const { data: leads } = await supabase.from('leads').select('id');
       const { data: sales } = await supabase.from('sales').select('amount');
 
@@ -45,7 +53,7 @@ export function Dashboard() {
       <div className="mb-8 sm:mb-10">
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-teal-600">Visão geral</p>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-          Olá, {profile?.name?.split(' ')[0] || 'usuário'} <span className="text-slate-400">👋</span>
+          Olá, {profile?.full_name?.split(' ')[0] || 'usuário'} <span className="text-slate-400">👋</span>
         </h1>
         <p className="mt-2 text-slate-500">Vamos transformar atenção em vendas hoje?</p>
       </div>
@@ -135,13 +143,44 @@ export function Dashboard() {
               <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 p-6 text-center">
                 <Sparkles size={22} className="mx-auto text-slate-300 mb-2" />
                 <p className="text-sm text-slate-400">
-                  Nenhuma meta definida
-                </p>
-              </div>
-            </div>
-            <button className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors duration-200 hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 active:scale-[0.99]">
-              Definir meta
-            </button>
+  {weeklySalesGoal
+    ? `Meta de ${weeklySalesGoal} vendas nesta semana`
+    : 'Nenhuma meta definida'}
+</p>
+  </div>
+    </div>
+  <button
+  onClick={async () => {
+    const value = window.prompt('Qual é sua meta de vendas para esta semana?');
+
+    if (value === null) return;
+
+    const goal = Number(value);
+
+    if (!Number.isInteger(goal) || goal < 1) {
+      window.alert('Digite um número inteiro maior que zero.');
+      return;
+    }
+
+    if (!user?.id) return;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ weekly_sales_goal: goal })
+      .eq('id', user.id);
+
+    if (error) {
+      console.error('Erro ao salvar meta semanal:', error);
+      window.alert('Não foi possível salvar sua meta.');
+      return;
+    }
+
+    window.location.reload();
+  }}
+  className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors duration-200 hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 active:scale-[0.99]"
+>
+  Definir meta
+</button>
           </div>
         </Card>
       </div>

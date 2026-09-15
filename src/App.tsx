@@ -15,6 +15,7 @@ import { Sales } from '@/pages/app/Sales';
 import { SubscriptionPage } from '@/pages/app/Subscription';
 import { SettingsPage } from '@/pages/app/Settings';
 import { PlaceholderPage } from '@/pages/app/PlaceholderPage';
+import { FluxoraAI } from '@/pages/app/FluxoraAI';
 import { AdminPage } from '@/pages/app/Admin';
 import { AdminRoute } from '@/components/AdminRoute';
 import { ContentGenerator } from '@/pages/app/ContentGenerator';
@@ -140,12 +141,7 @@ export default function App() {
             path="/app/fluxora-ai"
             element={
               <ProtectedRoute requireOnboarding>
-                <PlaceholderPage
-                  title="Fluxora AI"
-                  description="Sua assistente inteligente para vender online"
-                  icon={<Sparkles size={24} />}
-                  badge="IA"
-                />
+                 <FluxoraAI /> 
               </ProtectedRoute>
             }
           />

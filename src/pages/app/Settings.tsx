@@ -18,7 +18,7 @@ const goals: Goal[] = [
 
 export function SettingsPage() {
   const { profile, updateProfile, user } = useAuth();
-  const [name, setName] = useState(profile?.name ?? '');
+  const [name, setName] = useState(profile?.full_name?? '');
   const [businessType, setBusinessType] = useState<BusinessType | ''>(profile?.business_type ?? '');
   const [goal, setGoal] = useState<Goal | ''>(profile?.goal ?? '');
   const [selectedChannels, setSelectedChannels] = useState<SellingChannel[]>(profile?.selling_channels ?? []);
@@ -32,18 +32,27 @@ export function SettingsPage() {
   }
 
   async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setSaved(false);
-    await updateProfile({
-      name,
-      business_type: businessType || null,
-      goal: goal || null,
-      selling_channels: selectedChannels,
-    });
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  e.preventDefault();
+  setSaving(true);
+  setSaved(false);
+
+  const { error } = await updateProfile({
+    full_name: name,
+    business_type: businessType || null,
+    goal: goal || null,
+    selling_channels: selectedChannels,
+  });
+
+  setSaving(false);
+
+  if (error) {
+    console.error('Erro ao salvar perfil:', error);
+    return;
+  }
+
+  setSaved(true);
+  setTimeout(() => setSaved(false), 2500);
+
   }
 
   return (

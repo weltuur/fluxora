@@ -90,11 +90,11 @@ export function Sidebar() {
       <div className="border-t border-slate-200 p-3">
         <div className="flex items-center gap-3 px-2 py-2 mb-1">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-400 to-teal-600 text-sm font-bold text-white">
-            {profile?.name?.charAt(0).toUpperCase() || 'U'}
+            {profile?.full_name?.charAt(0).toUpperCase() || 'U'}
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-slate-900">
-              {profile?.name || 'Usuário'}
+              {profile?.full_name || 'Usuário'}
             </p>
             <p className="truncate text-xs text-slate-500">
               {subscription?.plan?.name ? `Plano ${subscription.plan.name}` : 'Sem plano'}

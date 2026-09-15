@@ -28,20 +28,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   async function fetchProfile(userId: string) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle();
 
-    if (error) {
-      console.error('Error fetching profile:', error);
-      return null;
-    }
-    const p = data as Profile | null;
-    setIsAdmin(p?.is_admin ?? false);
-    return p;
+  if (error) {
+    console.error('Error fetching profile:', error);
+    return null;
   }
+
+  const p = data as Profile | null;
+
+  if (p && !p.full_name && user?.user_metadata?.name) {
+    const fullName = user.user_metadata.name;
+
+    const { data: updatedProfile, error: updateError } = await supabase
+      .from('profiles')
+      .update({ full_name: fullName })
+      .eq('id', user.id)
+      .select()
+      .single();
+
+    if (!updateError && updatedProfile) {
+      setIsAdmin(updatedProfile.is_admin ?? false);
+      return updatedProfile as Profile;
+    }
+  }
+
+  setIsAdmin(p?.is_admin ?? false);
+  return p;
+}
+
 
   async function fetchSubscription(userId: string) {
     const { data, error } = await supabase
@@ -74,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase
       .from('profiles')
       .update(updates)
-      .eq('user_id', user.id);
+      .eq('id', user.id);
 
     if (error) return { error: error.message };
 

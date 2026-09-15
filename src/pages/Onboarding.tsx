@@ -43,7 +43,13 @@ export function Onboarding() {
       onboarding_completed: true,
     });
     setLoading(false);
-    if (!error) navigate('/app');
+
+if (error) {
+  console.error('Erro ao finalizar onboarding:', error);
+  return;
+}
+
+navigate('/app');
   }
 
   function handleNext() {
@@ -185,7 +191,7 @@ export function Onboarding() {
           </div>
 
           <p className="mt-6 text-center text-sm text-slate-400">
-            Olá, {profile?.name || 'usuário'}! Vamos configurar sua conta.
+            Olá, {profile?.full_name || 'usuário'}! Vamos configurar sua conta.
           </p>
         </div>
       </div>

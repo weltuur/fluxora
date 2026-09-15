@@ -13,7 +13,7 @@ export function PerformanceChart() {
         </div>
         <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
           <TrendingUp size={16} className="text-teal-500" />
-          <span>Em breve</span>
+        
         </div>
       </div>
 

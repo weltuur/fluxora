@@ -11,7 +11,8 @@ export type SubscriptionStatus = 'active' | 'inactive' | 'expired' | 'cancelled'
 export interface Profile {
   id: string;
   user_id: string;
-  name: string;
+  full_name: string | null; 
+  role: string;
   business_type: BusinessType | null;
   selling_channels: SellingChannel[];
   goal: Goal | null;

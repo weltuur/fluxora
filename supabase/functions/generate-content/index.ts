@@ -79,7 +79,7 @@ function generateMockContent(req: GenerateRequest): GeneratedContent {
     ],
   };
 
-  const ctasByGoal: Record<string, string[]> = {
+  const ctasByGoal: Record<string, string> = {
     "Atrair atenção": "Comenta o que achou e compartilha com alguém que precisa ver isso!",
     "Gerar comentários": "Comenta sua opinião abaixo! Quero saber o que você acha.",
     "Gerar seguidores": "Segue a página para mais conteúdos como esse!",
