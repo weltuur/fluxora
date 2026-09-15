@@ -1,12 +1,12 @@
-import { useState, type FormEvent } from 'react';
-import { Settings as SettingsIcon, User, Save, Loader2 } from 'lucide-react';
+import { useState, useEffect, type FormEvent } from 'react';
+import { Settings as SettingsIcon, User, Save, Loader2, CreditCard } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/context/AuthContext';
-import type { BusinessType, SellingChannel, Goal } from '@/types/database';
-
+import type { BusinessType, SellingChannel, Goal, Subscription } from '@/types/database';
+import { supabase } from '@/lib/supabase';
 const businessTypes: BusinessType[] = ['Produto digital', 'Produto físico', 'Serviço', 'Afiliado', 'Outro'];
 const channels: SellingChannel[] = ['TikTok', 'WhatsApp', 'Instagram', 'Facebook', 'Outros'];
 const goals: Goal[] = [
@@ -18,6 +18,8 @@ const goals: Goal[] = [
 
 export function SettingsPage() {
   const { profile, updateProfile, user } = useAuth();
+const [subscription, setSubscription] = useState<Subscription | null>(null);
+const [subscriptionLoading, setSubscriptionLoading] = useState(true);  
   const [name, setName] = useState(profile?.full_name?? '');
   const [businessType, setBusinessType] = useState<BusinessType | ''>(profile?.business_type ?? '');
   const [goal, setGoal] = useState<Goal | ''>(profile?.goal ?? '');
@@ -27,6 +29,43 @@ export function SettingsPage() {
   const [selectedChannels, setSelectedChannels] = useState<SellingChannel[]>(profile?.selling_channels ?? []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const subscriptionExpiration = subscription?.expires_at
+    ? new Date(subscription.expires_at)
+    : null;
+
+  const subscriptionDaysRemaining = subscriptionExpiration
+    ? Math.max(
+        0,
+        Math.ceil(
+          (subscriptionExpiration.getTime() - Date.now()) /
+            (1000 * 60 * 60 * 24)
+        )
+      )
+    : 0;  
+
+   useEffect(() => {
+    async function loadSubscription() {
+      if (!user?.id) {
+        setSubscriptionLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*, plan:plans(*)')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (!error) {
+        setSubscription((data as Subscription) ?? null);
+      }
+
+      setSubscriptionLoading(false);
+    }
+
+    loadSubscription();
+  }, [user?.id]);
 
   function toggleChannel(ch: SellingChannel) {
     setSelectedChannels((prev) =>
@@ -175,6 +214,69 @@ export function SettingsPage() {
             </span>
           )}
         </div>
+                <Card className="p-6">
+          <div className="flex items-center gap-2.5 mb-5">
+            <CreditCard size={20} className="text-slate-500" />
+            <h2 className="text-base font-semibold text-slate-900">
+              Conta e assinatura
+            </h2>
+          </div>
+
+          {subscriptionLoading ? (
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <Loader2 size={16} className="animate-spin" />
+              Carregando assinatura...
+            </div>
+          ) : subscription ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-500">Plano atual</span>
+                <span className="text-sm font-semibold text-slate-900">
+                  {subscription.plan?.name ?? 'Plano'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-500">Status</span>
+                <span className="text-sm font-semibold text-teal-600">
+                  Ativo
+                </span>
+              </div>
+
+              {subscriptionExpiration && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-500">
+                      Expira em
+                    </span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      {subscriptionExpiration.toLocaleDateString('pt-MZ')}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-500">
+                      Dias restantes
+                    </span>
+                    <span className="text-sm font-semibold text-teal-700">
+                      {subscriptionDaysRemaining === 0
+                        ? 'Expira hoje'
+                        : `${subscriptionDaysRemaining} ${
+                            subscriptionDaysRemaining === 1
+                              ? 'dia'
+                              : 'dias'
+                          }`}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">
+              Você não possui uma assinatura ativa.
+            </p>
+          )}
+        </Card>
       </form>
     </DashboardLayout>
   );
