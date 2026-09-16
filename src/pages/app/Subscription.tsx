@@ -54,12 +54,20 @@ export function SubscriptionPage() {
   }, []);
 
   function handleSubscribe(plan: Plan) {
-    if (plan.checkout_url && !plan.checkout_url.startsWith('MONTHLY_') && !plan.checkout_url.startsWith('TRIMESTER_') && !plan.checkout_url.startsWith('YEARLY_')) {
-      window.open(plan.checkout_url, '_blank');
-    } else {
-      window.alert(`O checkout para o plano ${plan.name} será configurado em breve via EscalePay.`);
-    }
+  const checkoutUrls: Record<string, string> = {
+    basico: 'https://checkout.escalepay.com/9499035',
+    avancado: 'https://checkout.escalepay.com/4035011',
+    premium: 'https://checkout.escalepay.com/3258663',
+  };
+
+  const checkoutUrl = checkoutUrls[plan.slug];
+
+  if (checkoutUrl) {
+    window.open(checkoutUrl, '_blank');
+  } else {
+    window.alert(`Checkout não configurado para o plano ${plan.name}.`);
   }
+}
 
   if (loading) {
     return (
