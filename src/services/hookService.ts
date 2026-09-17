@@ -23,9 +23,12 @@ export async function generateHooks(input: HookGenerationInput): Promise<Generat
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    if (errorData.limit_reached) {
-      throw new HookLimitReachedError(errorData.error || 'Limite atingido');
-    }
+   if (errorData.limit_reached || errorData.subscription_required) {
+  throw new HookLimitReachedError(
+    errorData.error || 'Não foi possível continuar.',
+    Boolean(errorData.subscription_required)
+  );
+}
     throw new Error(errorData.error || 'Não foi possível gerar os hooks agora. Tente novamente.');
   }
 
@@ -34,9 +37,12 @@ export async function generateHooks(input: HookGenerationInput): Promise<Generat
 }
 
 export class HookLimitReachedError extends Error {
-  constructor(message: string) {
+  subscriptionRequired: boolean;
+
+  constructor(message: string, subscriptionRequired = false) {
     super(message);
     this.name = 'HookLimitReachedError';
+    this.subscriptionRequired = subscriptionRequired;
   }
 }
 

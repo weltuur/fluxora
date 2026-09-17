@@ -78,6 +78,7 @@ export function X1Assistant() {
   const [copied, setCopied] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [limitReached, setLimitReached] = useState(false);
+  const [subscriptionRequired, setSubscriptionRequired] = useState(false); 
   const [showResults, setShowResults] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -100,31 +101,52 @@ export function X1Assistant() {
 
     setError('');
     setLimitReached(false);
+    setSubscriptionRequired(false);
     setAnalyzing(true);
     setSaved(false);
     try {
       const result = await analyzeConversation({ ...form, conversationText: form.conversationText.trim() });
       setAnalysis(result);
-      setShowResults(true);
-      const savedConversation = await saveConversation(form, result);
-      if (savedConversation) {
-        setSaved(true);
-        await loadHistory();
-      } else {
-        setError('A análise foi concluída, mas não foi possível salvar no histórico.');
-      }
-    } catch (err) {
-      if (err instanceof X1LimitReachedError) {
-        setLimitReached(true);
-        setError(err.message);
-      } else {
-        setError(err instanceof Error ? err.message : 'Não foi possível analisar a conversa agora. Tente novamente.');
-      }
-    } finally {
-      setAnalyzing(false);
-    }
+ setShowResults(true);
+
+const savedConversation = await saveConversation(form, result);
+
+if (savedConversation) {
+  setSaved(true);
+  await loadHistory();
+} else {
+  setError('A análise foi concluída, mas não foi possível salvar no histórico.');
+}
+
+ } catch (err) {
+
+  if (err instanceof X1LimitReachedError) {
+
+    setLimitReached(true);
+
+    console.log('X1 subscriptionRequired:', err.subscriptionRequired);
+
+    setSubscriptionRequired(err.subscriptionRequired);
+
+    setError(err.message);
+
+  } else {
+
+    setError(
+      err instanceof Error
+        ? err.message
+        : 'Não foi possível analisar agora.'
+    );
+
   }
 
+} finally {
+
+  setAnalyzing(false);
+
+}
+
+}
   function handleCopy(text: string, id: string) {
     navigator.clipboard.writeText(text);
     setCopied(id);
@@ -189,7 +211,11 @@ export function X1Assistant() {
           <div className="flex items-start gap-3">
             <Lock size={22} className="shrink-0 text-amber-600 mt-0.5" />
             <div>
-              <h2 className="font-semibold text-slate-900 mb-1">Limite de análises atingido</h2>
+             <h2 className="font-semibold text-slate-900 mb-1">
+  {subscriptionRequired
+    ? 'Recurso disponível para assinantes'
+    : 'Limite de análises atingido'}
+</h2>
               <p className="text-sm text-slate-600 mb-3">{error}</p>
               <a href="/app/assinatura" className="inline-flex rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-600">Fazer upgrade</a>
             </div>

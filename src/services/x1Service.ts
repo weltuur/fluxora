@@ -40,8 +40,11 @@ export async function analyzeConversation(input: X1ConversationInput): Promise<X
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     if (data.limit_reached) {
-      throw new X1LimitReachedError(data.error || 'Limite de análises atingido');
-    }
+  throw new X1LimitReachedError(
+    data.error || 'Limite de análises atingido',
+    data.subscription_required === true
+  );
+}
     throw new Error(data.error || 'Não foi possível analisar a conversa agora. Tente novamente.');
   }
 
@@ -53,9 +56,12 @@ export async function analyzeConversation(input: X1ConversationInput): Promise<X
 }
 
 export class X1LimitReachedError extends Error {
-  constructor(message: string) {
+  subscriptionRequired: boolean;
+
+  constructor(message: string, subscriptionRequired = false) {
     super(message);
     this.name = 'X1LimitReachedError';
+    this.subscriptionRequired = subscriptionRequired;
   }
 }
 

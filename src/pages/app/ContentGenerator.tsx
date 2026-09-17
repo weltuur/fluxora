@@ -235,14 +235,21 @@ export function ContentGenerator() {
           <span className="text-sm text-slate-600">
             {limitInfo.allowed ? (
               <>
-                <span className="font-semibold text-slate-900">{limitInfo.remaining}</span> gerações restantes
-                <span className="text-slate-400"> de {limitInfo.limit_value}</span>
-              </>
-            ) : (
-              <span className="text-amber-600 font-medium">Limite de gerações atingido</span>
-            )}
-          </span>
-          <div className="h-1.5 w-24 rounded-full bg-slate-200 overflow-hidden">
+               <span className="font-semibold text-slate-900">
+  {limitInfo.remaining}
+</span>{' '}
+gerações restantes
+<span className="text-slate-400"> de {limitInfo.limit_value}</span>
+</>
+) : (
+  <span className="text-amber-600 font-medium">
+    {limitInfo.limit_value === 0
+      ? 'Recurso disponível para assinantes'
+      : 'Limite de gerações atingido'}
+  </span>
+)}
+</span>
+<div className="h-1.5 w-24 rounded-xl bg-slate-200 overflow-hidden">
             <div
               className="h-full bg-teal-500 transition-all"
               style={{
@@ -267,7 +274,11 @@ export function ContentGenerator() {
           <div className="flex items-start gap-3">
             <Lock size={24} className="shrink-0 text-amber-600 mt-0.5" />
             <div className="flex-1">
-              <h3 className="font-semibold text-slate-900 mb-1">Limite atingido</h3>
+              <h3 className="font-semibold text-slate-900 mb-1">
+  {limitInfo?.limit_value === 0
+    ? 'Recurso disponível para assinantes'
+    : 'Limite atingido'}
+</h3>
               <p className="text-sm text-slate-600 mb-4">{error}</p>
               <a
                 href="/app/assinatura"

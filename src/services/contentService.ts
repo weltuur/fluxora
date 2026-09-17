@@ -31,9 +31,12 @@ export async function generateContent(
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
 
-    if (errorData.limit_reached) {
-      throw new LimitReachedError(errorData.error || 'Limite atingido');
-    }
+   if (errorData.limit_reached || errorData.subscription_required) {
+  throw new LimitReachedError(
+    errorData.error || 'Não foi possível continuar.',
+    Boolean(errorData.subscription_required)
+  );
+}
 
     throw new Error(
       errorData.error ||
@@ -46,9 +49,12 @@ export async function generateContent(
 }
 
 export class LimitReachedError extends Error {
-  constructor(message: string) {
+  subscriptionRequired: boolean;
+
+  constructor(message: string, subscriptionRequired = false) {
     super(message);
     this.name = 'LimitReachedError';
+    this.subscriptionRequired = subscriptionRequired;
   }
 }
 
